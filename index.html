@@ -84,6 +84,28 @@
         .agreement-check { display: flex; align-items: flex-start; gap: 10px; margin: 18px 0 8px; padding: 15px; background: #f5f5f5; border-radius: 8px; text-align: left; }
         .agreement-check input { width: 20px; height: 20px; margin: 0; flex: 0 0 auto; }
         .agreement-check label { margin: 0; line-height: 1.5; cursor: pointer; }
+        .complete-wrap { padding: 18px 0 30px; }
+        .success-icon { width: 68px; height: 68px; margin: 0 auto 16px; border-radius: 50%; background: #000; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 800; }
+        .complete-title { margin: 0; text-align: center; font-size: 25px; color: #111; }
+        .complete-message { margin: 9px 0 24px; text-align: center; color: #777; font-size: 14px; line-height: 1.5; }
+        .receipt-card { overflow: hidden; border: 1px solid #e5e5e5; border-radius: 14px; background: #fff; box-shadow: 0 8px 28px rgba(0,0,0,0.07); }
+        .receipt-head { padding: 20px; background: #111; color: #fff; }
+        .receipt-label { margin-bottom: 5px; color: #aaa; font-size: 11px; letter-spacing: 1px; }
+        .receipt-branch { font-size: 19px; font-weight: 800; }
+        .receipt-contact { margin-top: 4px; color: #ccc; font-size: 13px; }
+        .receipt-section { padding: 18px 20px; border-bottom: 1px solid #eee; }
+        .receipt-section-title { margin-bottom: 12px; color: #888; font-size: 12px; font-weight: 700; }
+        .receipt-item { display: grid; grid-template-columns: 58px 1fr auto; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid #f1f1f1; }
+        .receipt-item:last-child { border-bottom: 0; }
+        .brand-badge { padding: 5px 4px; border-radius: 4px; background: #f0f0f0; color: #555; text-align: center; font-size: 9px; font-weight: 800; }
+        .receipt-item-name { font-size: 13px; font-weight: 650; line-height: 1.35; }
+        .receipt-item-qty { color: #555; font-size: 13px; font-weight: 700; white-space: nowrap; }
+        .receipt-total { display: flex; align-items: flex-end; justify-content: space-between; padding: 20px; background: #fafafa; }
+        .receipt-total-label { color: #666; font-size: 13px; }
+        .receipt-total-amount { color: #000; font-size: 24px; font-weight: 850; }
+        .contract-status { display: flex; gap: 8px; align-items: center; margin-top: 14px; padding: 13px 15px; border-radius: 8px; background: #eef8f0; color: #24723b; font-size: 12px; font-weight: 700; }
+        .result-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+        .result-actions .submit-btn { margin: 0; padding: 16px 10px; }
     </style>
 </head>
 <body>
@@ -206,6 +228,31 @@
         <div class="summary-box" id="orderSummary"></div>
         <button type="button" class="submit-btn" style="background:#fee500; color:#3c1e1e;" onclick="shareNative()">공유하기</button>
         <button type="button" class="submit-btn" style="background:#4a90e2;" onclick="location.reload()">새 주문 작성</button>
+        <div class="complete-wrap">
+            <div class="success-icon">✓</div>
+            <h2 class="complete-title">주문이 완료되었습니다</h2>
+            <p class="complete-message">주문 정보와 계약 동의가 정상적으로 접수되었습니다.</p>
+            <div class="receipt-card">
+                <div class="receipt-head">
+                    <div class="receipt-label">ORDER FOR</div>
+                    <div class="receipt-branch" id="resultBranch"></div>
+                    <div class="receipt-contact" id="resultContact"></div>
+                </div>
+                <div class="receipt-section">
+                    <div class="receipt-section-title">주문 상품</div>
+                    <div id="resultItems"></div>
+                </div>
+                <div class="receipt-total">
+                    <div class="receipt-total-label">최종 주문금액</div>
+                    <div class="receipt-total-amount" id="resultTotal"></div>
+                </div>
+            </div>
+            <div class="contract-status"><span>✓</span><span>판매 파트너십 계약 동의 완료</span></div>
+            <div class="result-actions">
+                <button type="button" class="submit-btn secondary-btn" onclick="shareNative()">주문내역 공유</button>
+                <button type="button" class="submit-btn" onclick="location.reload()">새 주문 작성</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -310,12 +357,14 @@
         if(!branch || !contact) return alert("정보를 입력하세요.");
         
         let details = []; let splitItems = []; let total = 0;
+        let details = []; let splitItems = []; let orderedItems = []; let total = 0;
         products.forEach(p => {
             const q = orderQty[p.name] || 0;
             if(q > 0) {
                 const price = parseInt(p.price.replace(/[^0-9]/g, "")) || 0;
                 details.push(`${p.name} : ${q}개`);
                 splitItems.push(`${p.name}:${q}`);
+                orderedItems.push({ brand: p.brand || 'STEALER', name: p.name, quantity: q });
                 total += (price * q);
             }
         });
@@ -331,6 +380,7 @@
 
         const summary = `[지점] ${branch}\n[연락처] ${contact}\n\n[주문내역]\n${details.join("\n")}\n\n총 합계: ${total.toLocaleString()}원`;
         pendingOrder = { branch, contact, splitItems, total, summary };
+        pendingOrder = { branch, contact, splitItems, orderedItems, total, summary };
         document.getElementById('confirmSummary').innerText = summary;
         setActivePage('confirmPage');
     }
@@ -371,12 +421,37 @@
         fetch(API_URL, { method: "POST", mode: "no-cors", body: fd }).then(() => {
             document.getElementById('loader').style.display = 'none';
             document.getElementById('orderSummary').innerText = summary;
+            renderCompletedOrder();
             setActivePage('resultPage');
+        });
+    }
+
+    function renderCompletedOrder() {
+        document.getElementById('resultBranch').innerText = pendingOrder.branch;
+        document.getElementById('resultContact').innerText = pendingOrder.contact;
+        document.getElementById('resultTotal').innerText = pendingOrder.total.toLocaleString() + '원';
+        const items = document.getElementById('resultItems');
+        items.innerHTML = '';
+        pendingOrder.orderedItems.forEach(item => {
+            const row = document.createElement('div');
+            row.className = 'receipt-item';
+            const badge = document.createElement('div');
+            badge.className = 'brand-badge';
+            badge.innerText = item.brand;
+            const name = document.createElement('div');
+            name.className = 'receipt-item-name';
+            name.innerText = item.name;
+            const qty = document.createElement('div');
+            qty.className = 'receipt-item-qty';
+            qty.innerText = item.quantity + '개';
+            row.append(badge, name, qty);
+            items.appendChild(row);
         });
     }
 
     function shareNative() {
         const text = document.getElementById('orderSummary').innerText;
+        const text = pendingOrder ? pendingOrder.summary : '';
         if (navigator.share) navigator.share({ title: '주문서', text: text });
         else alert("복사하여 사용하세요.");
     }
