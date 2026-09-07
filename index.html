@@ -23,7 +23,7 @@
 
         .container { max-width: 500px; margin: auto; background: white; padding: 20px; min-height: 100vh; box-sizing: border-box; }
         
-        #orderPage, #resultPage { display: none; }
+        #orderPage, #confirmPage, #agreementPage, #resultPage { display: none; }
         .active { display: block !important; }
 
         /* 폼 요소 */
@@ -74,6 +74,16 @@
         #imageModal img { max-width: 95%; max-height: 80%; }
         #loader { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); color: white; flex-direction: column; justify-content: center; align-items: center; z-index: 3000; }
         .summary-box { background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px dashed #000; white-space: pre-wrap; font-size: 14px; text-align: left; }
+        .step-title { text-align: center; margin: 10px 0 6px; font-size: 22px; }
+        .step-description { text-align: center; color: #777; font-size: 13px; line-height: 1.5; margin-bottom: 20px; }
+        .button-row { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; }
+        .button-row .submit-btn { margin-top: 10px; }
+        .secondary-btn { background: #e9e9e9; color: #222; }
+        .contract-box { height: 360px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; padding: 18px; box-sizing: border-box; background: #fafafa; text-align: left; font-size: 13px; line-height: 1.7; white-space: pre-wrap; }
+        .contract-box h3 { text-align: center; margin: 0 0 18px; font-size: 18px; }
+        .agreement-check { display: flex; align-items: flex-start; gap: 10px; margin: 18px 0 8px; padding: 15px; background: #f5f5f5; border-radius: 8px; text-align: left; }
+        .agreement-check input { width: 20px; height: 20px; margin: 0; flex: 0 0 auto; }
+        .agreement-check label { margin: 0; line-height: 1.5; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -102,7 +112,93 @@
         <div id="grid-STEALER" class="product-grid show"></div>
         <div id="grid-muzik" class="product-grid"></div>
 
-        <button type="button" class="submit-btn" onclick="submitOrder()">주문 제출하기</button>
+        <button type="button" class="submit-btn" onclick="reviewOrder()">주문정보 확인하기</button>
+    </div>
+
+    <div id="confirmPage">
+        <h2 class="step-title">주문정보 확인</h2>
+        <p class="step-description">주문 내용을 확인해 주세요.<br>수정이 필요하면 이전 단계로 돌아갈 수 있습니다.</p>
+        <div class="summary-box" id="confirmSummary"></div>
+        <div class="button-row">
+            <button type="button" class="submit-btn secondary-btn" onclick="showOrderPage()">수정하기</button>
+            <button type="button" class="submit-btn" onclick="showAgreementPage()">계약 확인하기</button>
+        </div>
+    </div>
+
+    <div id="agreementPage">
+        <h2 class="step-title">판매 파트너십 계약 확인</h2>
+        <p class="step-description">아래 계약 내용을 끝까지 확인한 뒤 동의해 주세요.</p>
+        <div class="contract-box" id="contractContent"><h3>판매 파트너십 계약서</h3>뮤지크크리에이티브레이블(이하 "갑"이라 한다)와 <span id="contractPartner">파트너샵</span>(이하 "을"이라 한다)은 다음과 같이 판매 파트너십 계약(이하 "본 계약")을 체결한다.
+
+제1조 (목적)
+본 계약은 갑이 을에게 상품을 공급하고, 을이 이를 판매함에 있어 양 당사자의 권리와 의무, 거래 조건을 명확히 하여 상호 협력관계를 도모함을 목적으로 한다.
+
+제2조 (계약기간)
+① 본 계약의 유효기간은 계약 체결일로부터 1년으로 한다.
+② 계약 만료 ○개월 전까지 양 당사자 중 어느 일방의 서면 이의 제기가 없는 경우, 본 계약은 동일한 조건으로 1년씩 자동 연장된다.
+
+제3조 (상품 공급 및 발주)
+① 을은 갑이 정한 발주 절차 및 최소 발주 수량에 따라 상품을 주문하며, 갑은 특별한 사유가 없는 한 이에 성실히 응한다.
+② 공급가격, 결제조건(대금 지급 시기 및 방법) 및 납품 기한은 별도 발주서 또는 부속합의서에 따른다.
+
+제4조 (교환 및 반품)
+① 을이 갑으로부터 공급받은 상품은 동일 시즌 내에 한하여 100% 교환이 가능하다.
+② 교환 대상은 미판매·미개봉 등 재판매가 가능한 상태의 정상 상품에 한하며, 훼손·오염·태그 분실 상품은 교환 대상에서 제외한다.
+③ 교환 신청 절차, 기한 및 운송비 부담 주체는 다음과 같다.
+- 신청 기한: 시즌 종료일로부터 한달 이내
+- 신청 방법: (예: 갑 지정 발주 시스템/이메일 등을 통한 서면 신청)
+- 운송비 부담: (예: 왕복 운송비는 을 부담 / 갑 부담 등 협의 필요)
+
+제5조 (온라인 판매 제한)
+① 을은 갑으로부터 사전에 발급받은 온라인 판매 승인 코드(이하 "온라인 코드")를 보유하지 않은 경우, 오픈마켓, 자사몰, SNS 판매, 해외직구 대행 등 일체의 온라인 채널을 통한 판매 행위를 할 수 없다.
+② 온라인 코드를 보유한 경우에도 갑이 지정한 채널 및 조건 범위 내에서만 온라인 판매가 허용된다.
+③ 을이 본 조를 위반하여 무단으로 온라인 판매를 한 사실이 확인될 경우, 갑은 시정 요구, 공급 중단, 위약금 청구 및 계약 해지 등의 조치를 취할 수 있다.
+
+제6조 (판매가격 및 할인)
+① 을은 갑이 제시한 소비자 권장가격(이하 "정상가")을 기준으로 판매하는 것을 원칙으로 한다.
+② 을이 자체적으로 소비자에게 제공하는 할인은 정상가 대비 최대 10%를 초과할 수 없다.
+
+제7조 (마케팅 지원)
+① 갑은 을의 판매 활성화를 위하여 다음 각 호의 마케팅 지원을 제공할 수 있다.
+- POP물, 매장 디스플레이, 홍보물 등 판촉 자료 제공
+- 판매 상품 교육 지원
+- SNS·온라인 채널을 통한 공동 홍보(단, 제5조에 따른 온라인 판매 제한 범위 내)
+② 마케팅 지원의 구체적 내용, 비용 분담 비율 및 시기는 양 당사자가 별도로 협의하여 정한다.
+
+제8조 (상표 및 지식재산권)
+① 갑이 제공하는 상표, 로고, 디자인, 홍보 콘텐츠 등에 대한 지식재산권은 갑에게 귀속된다.
+② 을은 갑의 사전 서면 동의 없이 상표 및 콘텐츠를 본 계약의 목적 범위를 벗어나 사용할 수 없으며, 계약 종료 시 즉시 사용을 중단한다.
+
+제9조 (비밀유지)
+양 당사자는 본 계약과 관련하여 알게 된 공급가, 판매 조건, 영업 정보 등 상대방의 비밀정보를 계약기간은 물론 계약 종료 후 1년간 제3자에게 누설하거나 목적 외로 사용하지 아니한다.
+
+제10조 (계약의 해지)
+① 다음 각 호의 어느 하나에 해당하는 경우, 상대방은 서면 통지로 즉시 본 계약을 해지할 수 있다.
+- 상대방이 본 계약상 중대한 의무(대금 지급, 온라인 판매 제한, 할인율 상한 등)를 위반하고 시정 요구 후 일주일 이내 시정하지 않는 경우
+- 상대방에 대한 파산, 회생절차 개시, 영업정지 등 신용상태에 중대한 변화가 발생한 경우
+② 계약 해지 시 재고 상품의 처리(반품·매입 등) 방법은 별도 협의한다.
+
+제11조 (손해배상 및 면책)
+① 일방 당사자의 귀책사유로 상대방에게 손해가 발생한 경우, 귀책 당사자는 그 손해를 배상한다.
+② 천재지변, 전쟁, 정부 규제 등 양 당사자의 통제 범위를 벗어난 불가항력 사유로 인한 계약 불이행에 대해서는 책임을 지지 아니한다.
+
+제12조 (분쟁해결)
+① 본 계약과 관련하여 분쟁이 발생하는 경우, 양 당사자는 우선 상호 협의를 통해 원만히 해결하도록 노력한다.
+② 협의가 이루어지지 않는 경우, 본 계약과 관련한 소송의 관할법원은 서울중앙법원으로 한다.
+
+제13조 (기타)
+① 본 계약에 명시되지 않은 사항은 관계 법령 및 상관례에 따른다.
+② 본 계약의 내용을 변경하고자 할 경우, 양 당사자의 서면 합의에 의한다.
+
+본 계약의 체결을 증명하기 위하여 계약서 2부를 작성하여 갑과 을이 각각 서명 또는 기명날인한 후 각 1부씩 보관한다.</div>
+        <div class="agreement-check">
+            <input type="checkbox" id="contractAgree">
+            <label for="contractAgree">위 주문정보와 판매 파트너십 계약 내용을 모두 확인했으며 이에 동의합니다.</label>
+        </div>
+        <div class="button-row">
+            <button type="button" class="submit-btn secondary-btn" onclick="showConfirmPage()">이전</button>
+            <button type="button" class="submit-btn" onclick="submitOrder()">동의하고 주문 제출</button>
+        </div>
     </div>
 
     <div id="resultPage">
@@ -120,8 +216,10 @@
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyG2k1g3YzMPrBKGjuvqpL0Fhkr3aFjvteI_nZAHOZUxJug3rD2Ij4QF2yb5KLtxedglg/exec";
+    const MIN_ORDER_AMOUNT = 5000000;
     let products = [];
     let orderQty = {}; 
+    let pendingOrder = null;
 
     window.onload = loadData;
 
@@ -198,7 +296,15 @@
         modal.style.display = 'flex';
     }
 
-    function submitOrder() {
+    function setActivePage(pageId) {
+        ['orderPage', 'confirmPage', 'agreementPage', 'resultPage'].forEach(id => {
+            document.getElementById(id).classList.toggle('active', id === pageId);
+        });
+        document.getElementById('stickyTotal').style.display = pageId === 'orderPage' ? 'flex' : 'none';
+        window.scrollTo(0, 0);
+    }
+
+    function reviewOrder() {
         const branch = document.getElementById('branchName').value;
         const contact = document.getElementById('contactNum').value;
         if(!branch || !contact) return alert("정보를 입력하세요.");
@@ -214,8 +320,43 @@
             }
         });
         if(details.length === 0) return alert("수량을 선택하세요.");
+        if(total < MIN_ORDER_AMOUNT) {
+            const shortage = MIN_ORDER_AMOUNT - total;
+            return alert(
+                `최소 주문금액은 STEALER와 muzik 합산 ${MIN_ORDER_AMOUNT.toLocaleString()}원입니다.\n` +
+                `현재 주문금액: ${total.toLocaleString()}원\n` +
+                `부족한 금액: ${shortage.toLocaleString()}원`
+            );
+        }
 
         const summary = `[지점] ${branch}\n[연락처] ${contact}\n\n[주문내역]\n${details.join("\n")}\n\n총 합계: ${total.toLocaleString()}원`;
+        pendingOrder = { branch, contact, splitItems, total, summary };
+        document.getElementById('confirmSummary').innerText = summary;
+        setActivePage('confirmPage');
+    }
+
+    function showOrderPage() {
+        setActivePage('orderPage');
+    }
+
+    function showConfirmPage() {
+        setActivePage('confirmPage');
+    }
+
+    function showAgreementPage() {
+        if(!pendingOrder) return showOrderPage();
+        document.getElementById('contractPartner').innerText = pendingOrder.branch + ' 파트너샵';
+        document.getElementById('contractAgree').checked = false;
+        setActivePage('agreementPage');
+    }
+
+    function submitOrder() {
+        if(!pendingOrder) return showOrderPage();
+        if(!document.getElementById('contractAgree').checked) {
+            return alert('판매 파트너십 계약 내용에 동의해 주세요.');
+        }
+
+        const { branch, contact, splitItems, total, summary } = pendingOrder;
         document.getElementById('loader').style.display = 'flex';
         const fd = new FormData();
         fd.append("action", "order");
@@ -223,14 +364,14 @@
         fd.append("items", splitItems.join(","));
         fd.append("total", total.toLocaleString() + "원");
         fd.append("order", summary);
+        fd.append("contractAgreed", "동의");
+        fd.append("contractAgreedAt", new Date().toISOString());
+        fd.append("contractVersion", "2026-09-07");
 
         fetch(API_URL, { method: "POST", mode: "no-cors", body: fd }).then(() => {
             document.getElementById('loader').style.display = 'none';
-            document.getElementById('orderPage').classList.remove('active');
-            document.getElementById('resultPage').classList.add('active');
             document.getElementById('orderSummary').innerText = summary;
-            document.getElementById('stickyTotal').style.display = 'none';
-            window.scrollTo(0,0);
+            setActivePage('resultPage');
         });
     }
 
