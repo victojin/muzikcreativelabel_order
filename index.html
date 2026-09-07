@@ -29,7 +29,7 @@
         /* 폼 요소 */
         .form-group { margin: 15px 0; text-align: left; }
         label { display: block; font-weight: bold; margin-bottom: 8px; font-size: 14px; }
-        input[type="text"], input[type="tel"] { width: 100%; padding: 14px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        input[type="text"], input[type="tel"], input[type="email"] { width: 100%; padding: 14px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
 
         /* 제품 그리드 및 하단 버튼 가림 방지 여백 */
         .product-grid { display: none; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; }
@@ -122,8 +122,16 @@
             <input type="text" id="branchName" placeholder="지점명 입력">
         </div>
         <div class="form-group">
-            <label>연락처</label>
-            <input type="tel" id="contactNum" placeholder="연락처 입력">
+            <label>주소</label>
+            <input type="text" id="address" placeholder="매장 주소 입력">
+        </div>
+        <div class="form-group">
+            <label>모바일</label>
+            <input type="tel" id="mobile" placeholder="010-0000-0000" inputmode="tel">
+        </div>
+        <div class="form-group">
+            <label>이메일</label>
+            <input type="email" id="email" placeholder="example@email.com" inputmode="email">
         </div>
 
         <div class="brand-tabs">
@@ -224,10 +232,6 @@
     </div>
 
     <div id="resultPage">
-        <h2 style="text-align:center;">주문 완료</h2>
-        <div class="summary-box" id="orderSummary"></div>
-        <button type="button" class="submit-btn" style="background:#fee500; color:#3c1e1e;" onclick="shareNative()">공유하기</button>
-        <button type="button" class="submit-btn" style="background:#4a90e2;" onclick="location.reload()">새 주문 작성</button>
         <div class="complete-wrap">
             <div class="success-icon">✓</div>
             <h2 class="complete-title">주문이 완료되었습니다</h2>
@@ -236,7 +240,9 @@
                 <div class="receipt-head">
                     <div class="receipt-label">ORDER FOR</div>
                     <div class="receipt-branch" id="resultBranch"></div>
-                    <div class="receipt-contact" id="resultContact"></div>
+                    <div class="receipt-contact" id="resultAddress"></div>
+                    <div class="receipt-contact" id="resultMobile"></div>
+                    <div class="receipt-contact" id="resultEmail"></div>
                 </div>
                 <div class="receipt-section">
                     <div class="receipt-section-title">주문 상품</div>
@@ -352,11 +358,13 @@
     }
 
     function reviewOrder() {
-        const branch = document.getElementById('branchName').value;
-        const contact = document.getElementById('contactNum').value;
-        if(!branch || !contact) return alert("정보를 입력하세요.");
+        const branch = document.getElementById('branchName').value.trim();
+        const address = document.getElementById('address').value.trim();
+        const mobile = document.getElementById('mobile').value.trim();
+        const email = document.getElementById('email').value.trim();
+        if(!branch || !address || !mobile || !email) return alert("주문자 정보를 모두 입력하세요.");
+        if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return alert("이메일 주소를 정확히 입력하세요.");
         
-        let details = []; let splitItems = []; let total = 0;
         let details = []; let splitItems = []; let orderedItems = []; let total = 0;
         products.forEach(p => {
             const q = orderQty[p.name] || 0;
@@ -378,9 +386,8 @@
             );
         }
 
-        const summary = `[지점] ${branch}\n[연락처] ${contact}\n\n[주문내역]\n${details.join("\n")}\n\n총 합계: ${total.toLocaleString()}원`;
-        pendingOrder = { branch, contact, splitItems, total, summary };
-        pendingOrder = { branch, contact, splitItems, orderedItems, total, summary };
+        const summary = `[지점명] ${branch}\n[주소] ${address}\n[모바일] ${mobile}\n[이메일] ${email}\n\n[주문내역]\n${details.join("\n")}\n\n총 합계: ${total.toLocaleString()}원`;
+        pendingOrder = { branch, address, mobile, email, splitItems, orderedItems, total, summary };
         document.getElementById('confirmSummary').innerText = summary;
         setActivePage('confirmPage');
     }
@@ -406,11 +413,14 @@
             return alert('판매 파트너십 계약 내용에 동의해 주세요.');
         }
 
-        const { branch, contact, splitItems, total, summary } = pendingOrder;
+        const { branch, address, mobile, email, splitItems, total, summary } = pendingOrder;
         document.getElementById('loader').style.display = 'flex';
         const fd = new FormData();
         fd.append("action", "order");
-        fd.append("branch", branch + " / " + contact);
+        fd.append("branch", branch);
+        fd.append("address", address);
+        fd.append("mobile", mobile);
+        fd.append("email", email);
         fd.append("items", splitItems.join(","));
         fd.append("total", total.toLocaleString() + "원");
         fd.append("order", summary);
@@ -420,7 +430,6 @@
 
         fetch(API_URL, { method: "POST", mode: "no-cors", body: fd }).then(() => {
             document.getElementById('loader').style.display = 'none';
-            document.getElementById('orderSummary').innerText = summary;
             renderCompletedOrder();
             setActivePage('resultPage');
         });
@@ -428,7 +437,9 @@
 
     function renderCompletedOrder() {
         document.getElementById('resultBranch').innerText = pendingOrder.branch;
-        document.getElementById('resultContact').innerText = pendingOrder.contact;
+        document.getElementById('resultAddress').innerText = pendingOrder.address;
+        document.getElementById('resultMobile').innerText = pendingOrder.mobile;
+        document.getElementById('resultEmail').innerText = pendingOrder.email;
         document.getElementById('resultTotal').innerText = pendingOrder.total.toLocaleString() + '원';
         const items = document.getElementById('resultItems');
         items.innerHTML = '';
@@ -450,7 +461,6 @@
     }
 
     function shareNative() {
-        const text = document.getElementById('orderSummary').innerText;
         const text = pendingOrder ? pendingOrder.summary : '';
         if (navigator.share) navigator.share({ title: '주문서', text: text });
         else alert("복사하여 사용하세요.");
