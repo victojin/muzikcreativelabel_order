@@ -30,6 +30,11 @@
         .form-group { margin: 15px 0; text-align: left; }
         label { display: block; font-weight: bold; margin-bottom: 8px; font-size: 14px; }
         input[type="text"], input[type="tel"], input[type="email"] { width: 100%; padding: 14px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        .split-inputs { display: grid; align-items: center; gap: 8px; }
+        .mobile-inputs { grid-template-columns: 0.8fr auto 1fr auto 1fr; }
+        .email-inputs { grid-template-columns: 1fr auto 1.15fr; }
+        .input-separator { color: #777; font-size: 16px; font-weight: 700; text-align: center; }
+        .split-inputs input { text-align: center; min-width: 0; }
 
         /* 제품 그리드 및 하단 버튼 가림 방지 여백 */
         .product-grid { display: none; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; }
@@ -128,10 +133,22 @@
         <div class="form-group">
             <label>모바일</label>
             <input type="tel" id="mobile" placeholder="010-0000-0000" inputmode="tel">
+            <div class="split-inputs mobile-inputs">
+                <input type="tel" id="mobileFirst" placeholder="010" inputmode="numeric" maxlength="3" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                <span class="input-separator">-</span>
+                <input type="tel" id="mobileMiddle" placeholder="0000" inputmode="numeric" maxlength="4" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                <span class="input-separator">-</span>
+                <input type="tel" id="mobileLast" placeholder="0000" inputmode="numeric" maxlength="4" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+            </div>
         </div>
         <div class="form-group">
             <label>이메일</label>
             <input type="email" id="email" placeholder="example@email.com" inputmode="email">
+            <div class="split-inputs email-inputs">
+                <input type="text" id="emailLocal" placeholder="이메일 아이디" inputmode="email">
+                <span class="input-separator">@</span>
+                <input type="text" id="emailDomain" placeholder="example.com" inputmode="url">
+            </div>
         </div>
 
         <div class="brand-tabs">
@@ -363,6 +380,15 @@
         const mobile = document.getElementById('mobile').value.trim();
         const email = document.getElementById('email').value.trim();
         if(!branch || !address || !mobile || !email) return alert("주문자 정보를 모두 입력하세요.");
+        const mobileFirst = document.getElementById('mobileFirst').value.trim();
+        const mobileMiddle = document.getElementById('mobileMiddle').value.trim();
+        const mobileLast = document.getElementById('mobileLast').value.trim();
+        const emailLocal = document.getElementById('emailLocal').value.trim();
+        const emailDomain = document.getElementById('emailDomain').value.trim();
+        if(!branch || !address || !mobileFirst || !mobileMiddle || !mobileLast || !emailLocal || !emailDomain) return alert("주문자 정보를 모두 입력하세요.");
+        if(mobileFirst.length !== 3 || mobileMiddle.length !== 4 || mobileLast.length !== 4) return alert("모바일 번호를 정확히 입력하세요.");
+        const mobile = `${mobileFirst}-${mobileMiddle}-${mobileLast}`;
+        const email = `${emailLocal}@${emailDomain}`;
         if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return alert("이메일 주소를 정확히 입력하세요.");
         
         let details = []; let splitItems = []; let orderedItems = []; let total = 0;
