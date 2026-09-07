@@ -66,6 +66,8 @@
         }
         .total-label { font-size: 11px; opacity: 0.7; margin-bottom: 2px; width: 100%; text-align: center; }
         .total-amount { font-size: 22px; font-weight: bold; width: 100%; text-align: center; }
+        .sticky-order-btn { width: calc(100% - 30px); max-width: 470px; margin-top: 10px; padding: 14px; border: none; border-radius: 8px; background: #fff; color: #000; font-size: 15px; font-weight: 800; cursor: pointer; transition: background-color 0.2s, color 0.2s, opacity 0.2s; }
+        .sticky-order-btn:disabled { background: #666; color: #aaa; cursor: not-allowed; opacity: 1; }
 
         /* 제출 버튼 */
         .submit-btn { 
@@ -132,7 +134,6 @@
         </div>
         <div class="form-group">
             <label>모바일</label>
-            <input type="tel" id="mobile" placeholder="010-0000-0000" inputmode="tel">
             <div class="split-inputs mobile-inputs">
                 <input type="tel" id="mobileFirst" placeholder="010" inputmode="numeric" maxlength="3" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
                 <span class="input-separator">-</span>
@@ -143,7 +144,6 @@
         </div>
         <div class="form-group">
             <label>이메일</label>
-            <input type="email" id="email" placeholder="example@email.com" inputmode="email">
             <div class="split-inputs email-inputs">
                 <input type="text" id="emailLocal" placeholder="이메일 아이디" inputmode="email">
                 <span class="input-separator">@</span>
@@ -159,7 +159,6 @@
         <div id="grid-STEALER" class="product-grid show"></div>
         <div id="grid-muzik" class="product-grid"></div>
 
-        <button type="button" class="submit-btn" onclick="reviewOrder()">주문정보 확인하기</button>
     </div>
 
     <div id="confirmPage">
@@ -282,10 +281,11 @@
 <div id="stickyTotal" class="total-bar">
     <div class="total-label">전체 브랜드 합산 금액</div>
     <div class="total-amount" id="displayTotal">0원</div>
+    <button type="button" id="stickyOrderBtn" class="sticky-order-btn" onclick="reviewOrder()" disabled>최소 주문금액 5,000,000원</button>
 </div>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbzjXXjWQwKQ61qOlMPjd4FUaLHNz_J_8FFJGVe2OJgFYZMch9vAxYzLWO91Mc69hkTfrA/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbz6gWowei2Sx5rQ5CzKYNNK6bT5WB2JuIYtK7u9koq7xhqRzSlyf_ge5NC8I4Xgb67xpQ/exec";
     const MIN_ORDER_AMOUNT = 5000000;
     let products = [];
     let orderQty = {}; 
@@ -358,6 +358,10 @@
             total += (price * q);
         });
         document.getElementById('displayTotal').innerText = total.toLocaleString() + "원";
+        const orderButton = document.getElementById('stickyOrderBtn');
+        const canOrder = total >= MIN_ORDER_AMOUNT;
+        orderButton.disabled = !canOrder;
+        orderButton.innerText = canOrder ? '주문정보 확인하기' : '최소 주문금액 5,000,000원';
     }
 
     function openModal(src) {
@@ -377,9 +381,6 @@
     function reviewOrder() {
         const branch = document.getElementById('branchName').value.trim();
         const address = document.getElementById('address').value.trim();
-        const mobile = document.getElementById('mobile').value.trim();
-        const email = document.getElementById('email').value.trim();
-        if(!branch || !address || !mobile || !email) return alert("주문자 정보를 모두 입력하세요.");
         const mobileFirst = document.getElementById('mobileFirst').value.trim();
         const mobileMiddle = document.getElementById('mobileMiddle').value.trim();
         const mobileLast = document.getElementById('mobileLast').value.trim();
