@@ -39,6 +39,8 @@
         /* 제품 그리드 및 하단 버튼 가림 방지 여백 */
         .product-grid { display: none; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; }
         .product-grid.show { display: grid; }
+        .collection-title { grid-column: 1 / -1; margin: 18px 0 0; padding: 12px 4px 8px; border-bottom: 2px solid #000; text-align: left; font-size: 17px; font-weight: 800; letter-spacing: 0.3px; }
+        .collection-title:first-child { margin-top: 0; }
         
         /* 주문하기 버튼 하단 공간 확보 (매우 중요) */
         #orderPage { padding-bottom: 160px; text-align: center; } 
@@ -309,18 +311,33 @@
         const stealerGrid = document.getElementById('grid-STEALER');
         const muzikGrid = document.getElementById('grid-muzik');
         stealerGrid.innerHTML = ''; muzikGrid.innerHTML = '';
-        
+
+        const groupedProducts = { STEALER: new Map(), muzik: new Map() };
         products.forEach((p) => {
             const brandKey = p.brand ? p.brand.toLowerCase() : 'stealer';
-            const targetGrid = (brandKey === 'muzik') ? muzikGrid : stealerGrid;
+            const brand = (brandKey === 'muzik') ? 'muzik' : 'STEALER';
+            const match = p.name.match(/^\s*\[([^\]]+)\]\s*(.*)$/);
+            const collection = match ? match[1].trim() : '기타';
+            const displayName = match && match[2].trim() ? match[2].trim() : p.name;
+            if(!groupedProducts[brand].has(collection)) groupedProducts[brand].set(collection, []);
+            groupedProducts[brand].get(collection).push({ product: p, displayName: displayName });
             orderQty[p.name] = orderQty[p.name] || 0;
+        });
 
-            targetGrid.innerHTML += `
+        renderCollectionGroups(stealerGrid, groupedProducts.STEALER);
+        renderCollectionGroups(muzikGrid, groupedProducts.muzik);
+    }
+
+    function renderCollectionGroups(targetGrid, groups) {
+        groups.forEach((items, collection) => {
+            targetGrid.innerHTML += `<div class="collection-title">${collection}</div>`;
+            items.forEach(({ product: p, displayName }) => {
+                targetGrid.innerHTML += `
                 <div class="product-card">
                     <div class="img-container" onclick="openModal('${p.img}')">
                         <img src="${p.img}" onerror="this.src='https://via.placeholder.com/150'">
                     </div>
-                    <div class="product-name">${p.name}</div>
+                    <div class="product-name">${displayName}</div>
                     <div class="product-price">${p.price}</div>
                     <div class="qty-box">
                         <button class="qty-btn" onclick="updateQty('${p.name}', -1)">-</button>
@@ -328,6 +345,7 @@
                         <button class="qty-btn" onclick="updateQty('${p.name}', 1)">+</button>
                     </div>
                 </div>`;
+            });
         });
     }
 
