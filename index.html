@@ -41,6 +41,8 @@
         .product-grid.show { display: grid; }
         .collection-title { grid-column: 1 / -1; margin: 18px 0 0; padding: 12px 4px 8px; border-bottom: 2px solid #000; text-align: left; font-size: 17px; font-weight: 800; letter-spacing: 0.3px; }
         .collection-title:first-child { margin-top: 0; }
+        .collection-description { grid-column: 1 / -1; margin: -8px 0 2px; padding: 0 4px 10px; color: #777; text-align: left; font-size: 12px; line-height: 1.6; white-space: pre-line; }
+        .grid-spacer { visibility: hidden; }
         
         /* 주문하기 버튼 하단 공간 확보 (매우 중요) */
         #orderPage { padding-bottom: 160px; text-align: center; } 
@@ -49,7 +51,9 @@
         .img-container { width: 100%; aspect-ratio: 1/1; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #fff; margin-bottom: 10px; border-radius: 6px; cursor: pointer; }
         .img-container img { width: 100%; height: 100%; object-fit: contain; }
         .product-name { font-size: 12px; font-weight: 600; margin-bottom: 4px; min-height: 30px; display: flex; align-items: center; justify-content: center; line-height: 1.2; }
-        .product-price { font-size: 11px; color: #888; margin-bottom: 10px; }
+        .product-price { margin-bottom: 10px; }
+        .purchase-price { color: #000; font-size: 16px; font-weight: 800; line-height: 1.4; }
+        .retail-price { margin-top: 2px; color: #999; font-size: 10px; line-height: 1.4; }
         
         /* 수량 조절 */
         .qty-box { display: flex; align-items: center; justify-content: center; gap: 5px; }
@@ -287,7 +291,7 @@
 </div>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbxCI6EKgHgnQfspzq6yLt6bu2Rpjzcw5as0eJc7_A-QeDhX7Xzdr_jm9XwQiRRc7tQn_g/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbxGgAgNBYlviz3OaLoRhV6FQXvblf89SNK7qn_5-fHCSIQUeNpI7o7MIF9WcjNebfQM1g/exec";
     const MIN_ORDER_AMOUNT = 5000000;
     let products = [];
     let orderQty = {}; 
@@ -317,7 +321,7 @@
             const brandKey = p.brand ? p.brand.toLowerCase() : 'stealer';
             const brand = (brandKey === 'muzik') ? 'muzik' : 'STEALER';
             const match = p.name.match(/^\s*\[([^\]]+)\]\s*(.*)$/);
-            const collection = match ? match[1].trim() : '기타';
+            const collection = p.collection || (match ? match[1].trim() : '기타');
             const displayName = match && match[2].trim() ? match[2].trim() : p.name;
             if(!groupedProducts[brand].has(collection)) groupedProducts[brand].set(collection, []);
             groupedProducts[brand].get(collection).push({ product: p, displayName: displayName });
@@ -331,22 +335,52 @@
     function renderCollectionGroups(targetGrid, groups) {
         groups.forEach((items, collection) => {
             targetGrid.innerHTML += `<div class="collection-title">${collection}</div>`;
-            items.forEach(({ product: p, displayName }) => {
-                targetGrid.innerHTML += `
+            const descriptionItem = items.find(item => item.product.collectionDescription);
+            if(descriptionItem) {
+                targetGrid.innerHTML += `<div class="collection-description">${descriptionItem.product.collectionDescription}</div>`;
+            }
+            const productGroups = new Map();
+            items.forEach(item => {
+                const productKey = getProductGroupKey(item.displayName);
+                if(!productGroups.has(productKey)) productGroups.set(productKey, []);
+                productGroups.get(productKey).push(item);
+            });
+
+            productGroups.forEach(productItems => {
+                productItems.forEach(({ product: p, displayName }) => {
+                    targetGrid.innerHTML += `
                 <div class="product-card">
                     <div class="img-container" onclick="openModal('${p.img}')">
                         <img src="${p.img}" onerror="this.src='https://via.placeholder.com/150'">
                     </div>
                     <div class="product-name">${displayName}</div>
-                    <div class="product-price">${p.price}</div>
+                    <div class="product-price">
+                        <div class="purchase-price">${p.price}</div>
+                        <div class="retail-price">소비자가 ${p.retailPrice || '0원'}</div>
+                    </div>
                     <div class="qty-box">
                         <button class="qty-btn" onclick="updateQty('${p.name}', -1)">-</button>
                         <input type="number" id="qty_${p.name}" class="qty-input" value="${orderQty[p.name]}" readonly>
                         <button class="qty-btn" onclick="updateQty('${p.name}', 1)">+</button>
                     </div>
                 </div>`;
+                });
+                if(productItems.length % 2 !== 0) {
+                    targetGrid.innerHTML += `<div class="grid-spacer" aria-hidden="true"></div>`;
+                }
             });
         });
+    }
+
+    function getProductGroupKey(displayName) {
+        const stealerMatch = displayName.match(/^(.*?)\s*STL\s*\d+(?:\([^)]*\))?$/i);
+        if(stealerMatch) return stealerMatch[1].trim();
+
+        const muzikMatch = displayName.match(/^(.*?)\s+track\.[A-Za-z0-9]+(?:\([^)]*\))?$/i);
+        if(muzikMatch) return muzikMatch[1].trim();
+
+        const generalMatch = displayName.match(/^(.*?)\s+[A-Za-z]{2,}\s*\d+(?:\([^)]*\))?$/i);
+        return generalMatch ? generalMatch[1].trim() : displayName;
     }
 
     function switchBrand(brand) {
