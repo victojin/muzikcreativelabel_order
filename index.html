@@ -42,6 +42,7 @@
         .collection-title { grid-column: 1 / -1; margin: 18px 0 0; padding: 12px 4px 8px; border-bottom: 2px solid #000; text-align: left; font-size: 17px; font-weight: 800; letter-spacing: 0.3px; }
         .collection-title:first-child { margin-top: 0; }
         .collection-description { grid-column: 1 / -1; margin: -8px 0 2px; padding: 0 4px 10px; color: #777; text-align: left; font-size: 12px; line-height: 1.6; white-space: pre-line; }
+        .collection-order-rule { grid-column: 1 / -1; margin: -4px 0 4px; padding: 11px 13px; border-radius: 7px; background: #f2f2f2; color: #333; text-align: left; font-size: 12px; font-weight: 700; line-height: 1.5; }
         .grid-spacer { visibility: hidden; }
         
         /* 주문하기 버튼 하단 공간 확보 (매우 중요) */
@@ -292,6 +293,7 @@
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbxGgAgNBYlviz3OaLoRhV6FQXvblf89SNK7qn_5-fHCSIQUeNpI7o7MIF9WcjNebfQM1g/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbwC10JB_DrgNJH1gjJu1VSJKfzMBgLdppfToozsCCb8QPAfl1Itc3Zw73so3vlNKCEH_w/exec";
     const MIN_ORDER_AMOUNT = 5000000;
     let products = [];
     let orderQty = {}; 
@@ -338,6 +340,9 @@
             const descriptionItem = items.find(item => item.product.collectionDescription);
             if(descriptionItem) {
                 targetGrid.innerHTML += `<div class="collection-description">${descriptionItem.product.collectionDescription}</div>`;
+            }
+            if(collection.trim() === '잇섭') {
+                targetGrid.innerHTML += `<div class="collection-order-rule">주문 조건: 선택한 모델·컬러별 최소 5개 이상 주문해야 합니다.</div>`;
             }
             const productGroups = new Map();
             items.forEach(item => {
@@ -411,9 +416,20 @@
         });
         document.getElementById('displayTotal').innerText = total.toLocaleString() + "원";
         const orderButton = document.getElementById('stickyOrderBtn');
+        const hasItsubMinimumError = products.some(p => {
+            const collection = p.collection || ((p.name.match(/^\s*\[([^\]]+)\]/) || [])[1] || '');
+            const quantity = orderQty[p.name] || 0;
+            return collection.trim() === '잇섭' && quantity > 0 && quantity < 5;
+        });
         const canOrder = total >= MIN_ORDER_AMOUNT;
+        const canOrder = total >= MIN_ORDER_AMOUNT && !hasItsubMinimumError;
         orderButton.disabled = !canOrder;
         orderButton.innerText = canOrder ? '주문정보 확인하기' : '최소 주문금액 5,000,000원';
+        orderButton.innerText = canOrder
+            ? '주문정보 확인하기'
+            : (hasItsubMinimumError && total >= MIN_ORDER_AMOUNT
+                ? '잇섭 제품은 모델·컬러별 최소 5개'
+                : '최소 주문금액 5,000,000원');
     }
 
     function openModal(src) {
@@ -456,6 +472,14 @@
             }
         });
         if(details.length === 0) return alert("수량을 선택하세요.");
+        const invalidItsubItems = products.filter(p => {
+            const collection = p.collection || ((p.name.match(/^\s*\[([^\]]+)\]/) || [])[1] || '');
+            const quantity = orderQty[p.name] || 0;
+            return collection.trim() === '잇섭' && quantity > 0 && quantity < 5;
+        });
+        if(invalidItsubItems.length > 0) {
+            return alert("잇섭 컬렉션은 주문하는 모델·컬러별로 최소 5개 이상 선택해야 합니다.\n\n" + invalidItsubItems.map(p => p.name).join("\n"));
+        }
         if(total < MIN_ORDER_AMOUNT) {
             const shortage = MIN_ORDER_AMOUNT - total;
             return alert(
