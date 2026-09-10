@@ -189,10 +189,12 @@
 제2조 (계약기간)
 ① 본 계약의 유효기간은 계약 체결일로부터 1년으로 한다.
 ② 계약 만료 ○개월 전까지 양 당사자 중 어느 일방의 서면 이의 제기가 없는 경우, 본 계약은 동일한 조건으로 1년씩 자동 연장된다.
+② 계약 만료 1개월 전까지 양 당사자 중 어느 일방의 서면 이의 제기가 없는 경우, 본 계약은 동일한 조건으로 1년씩 자동 연장된다.
 
 제3조 (상품 공급 및 발주)
 ① 을은 갑이 정한 발주 절차 및 최소 발주 수량에 따라 상품을 주문하며, 갑은 특별한 사유가 없는 한 이에 성실히 응한다.
 ② 공급가격, 결제조건(대금 지급 시기 및 방법) 및 납품 기한은 별도 발주서 또는 부속합의서에 따른다.
+③ 리오더 시 1회 주문당 최소 주문금액은 1,000,000원이며, 제품당 최소 주문수량은 3개로 한다.
 
 제4조 (교환 및 반품)
 ① 을이 갑으로부터 공급받은 상품은 동일 시즌 내에 한하여 100% 교환이 가능하다.
@@ -244,6 +246,7 @@
 ② 본 계약의 내용을 변경하고자 할 경우, 양 당사자의 서면 합의에 의한다.
 
 본 계약의 체결을 증명하기 위하여 계약서 2부를 작성하여 갑과 을이 각각 서명 또는 기명날인한 후 각 1부씩 보관한다.</div>
+을이 오더페이지에서 본 계약의 내용을 확인한 후 동의란을 체크하고 주문을 제출한 경우, 별도의 서명 또는 기명날인 없이 본 계약의 모든 내용에 동의한 것으로 간주한다.</div>
         <div class="agreement-check">
             <input type="checkbox" id="contractAgree">
             <label for="contractAgree">위 주문정보와 판매 파트너십 계약 내용을 모두 확인했으며 이에 동의합니다.</label>
@@ -293,7 +296,7 @@
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbxGgAgNBYlviz3OaLoRhV6FQXvblf89SNK7qn_5-fHCSIQUeNpI7o7MIF9WcjNebfQM1g/exec";
-    const API_URL = "https://script.google.com/macros/s/AKfycbwC10JB_DrgNJH1gjJu1VSJKfzMBgLdppfToozsCCb8QPAfl1Itc3Zw73so3vlNKCEH_w/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbwgeSPFaLY-u7H7gI3g25qjvxLMgvEImdVsjlm5RKPANUTrApabzFHZDFlGaU3aoK-o2Q/exec";
     const MIN_ORDER_AMOUNT = 5000000;
     let products = [];
     let orderQty = {}; 
@@ -342,7 +345,7 @@
                 targetGrid.innerHTML += `<div class="collection-description">${descriptionItem.product.collectionDescription}</div>`;
             }
             if(collection.trim() === '잇섭') {
-                targetGrid.innerHTML += `<div class="collection-order-rule">주문 조건: 선택한 모델·컬러별 최소 5개 이상 주문해야 합니다.</div>`;
+                targetGrid.innerHTML += `<div class="collection-order-rule">주문 조건: 잇섭 제품을 하나라도 주문할 경우, 잇섭의 모든 모델·컬러를 각각 최소 5개 이상 주문해야 합니다.</div>`;
             }
             const productGroups = new Map();
             items.forEach(item => {
@@ -416,19 +419,20 @@
         });
         document.getElementById('displayTotal').innerText = total.toLocaleString() + "원";
         const orderButton = document.getElementById('stickyOrderBtn');
-        const hasItsubMinimumError = products.some(p => {
-            const collection = p.collection || ((p.name.match(/^\s*\[([^\]]+)\]/) || [])[1] || '');
-            const quantity = orderQty[p.name] || 0;
-            return collection.trim() === '잇섭' && quantity > 0 && quantity < 5;
-        });
         const canOrder = total >= MIN_ORDER_AMOUNT;
+        const itsubProducts = products.filter(p => {
+            const collection = p.collection || ((p.name.match(/^\s*\[([^\]]+)\]/) || [])[1] || '');
+            return collection.trim() === '잇섭';
+        });
+        const hasItsubOrder = itsubProducts.some(p => (orderQty[p.name] || 0) > 0);
+        const hasItsubMinimumError = hasItsubOrder && itsubProducts.some(p => (orderQty[p.name] || 0) < 5);
         const canOrder = total >= MIN_ORDER_AMOUNT && !hasItsubMinimumError;
         orderButton.disabled = !canOrder;
         orderButton.innerText = canOrder ? '주문정보 확인하기' : '최소 주문금액 5,000,000원';
         orderButton.innerText = canOrder
             ? '주문정보 확인하기'
             : (hasItsubMinimumError && total >= MIN_ORDER_AMOUNT
-                ? '잇섭 제품은 모델·컬러별 최소 5개'
+                ? '잇섭 전체 모델·컬러를 각각 최소 5개'
                 : '최소 주문금액 5,000,000원');
     }
 
@@ -472,13 +476,14 @@
             }
         });
         if(details.length === 0) return alert("수량을 선택하세요.");
-        const invalidItsubItems = products.filter(p => {
+        const itsubProducts = products.filter(p => {
             const collection = p.collection || ((p.name.match(/^\s*\[([^\]]+)\]/) || [])[1] || '');
-            const quantity = orderQty[p.name] || 0;
-            return collection.trim() === '잇섭' && quantity > 0 && quantity < 5;
+            return collection.trim() === '잇섭';
         });
+        const hasItsubOrder = itsubProducts.some(p => (orderQty[p.name] || 0) > 0);
+        const invalidItsubItems = hasItsubOrder ? itsubProducts.filter(p => (orderQty[p.name] || 0) < 5) : [];
         if(invalidItsubItems.length > 0) {
-            return alert("잇섭 컬렉션은 주문하는 모델·컬러별로 최소 5개 이상 선택해야 합니다.\n\n" + invalidItsubItems.map(p => p.name).join("\n"));
+            return alert("잇섭 제품을 주문하려면 모든 모델·컬러를 각각 최소 5개 이상 선택해야 합니다.\n\n[5개 미만인 제품]\n" + invalidItsubItems.map(p => p.name).join("\n"));
         }
         if(total < MIN_ORDER_AMOUNT) {
             const shortage = MIN_ORDER_AMOUNT - total;
