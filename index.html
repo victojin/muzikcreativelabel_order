@@ -40,8 +40,9 @@
         .credit-input-wrap { position: relative; }
         .credit-input { width: 100%; padding: 14px 38px 14px 14px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; background: #fff; font-size: 16px; font-weight: 700; text-align: right; }
         .credit-unit { position: absolute; top: 50%; right: 14px; transform: translateY(-50%); font-size: 14px; font-weight: 700; pointer-events: none; }
-        .credit-input { width: 100%; padding: 14px 58px 14px 14px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; background: #fff; font-size: 16px; font-weight: 700; text-align: right; }
-        .credit-unit { position: absolute; top: 50%; right: 18px; transform: translateY(-50%); padding-left: 10px; background: #fff; font-size: 14px; font-weight: 700; pointer-events: none; }
+        .credit-input-wrap { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+        .credit-input { width: 100%; padding: 14px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; background: #fff; font-size: 16px; font-weight: 700; text-align: right; }
+        .credit-unit { min-width: 18px; font-size: 14px; font-weight: 700; text-align: left; pointer-events: none; }
 
         /* 제품 그리드 및 하단 버튼 가림 방지 여백 */
         .product-grid { display: none; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; }
