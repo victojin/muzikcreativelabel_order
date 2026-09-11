@@ -365,10 +365,24 @@
     let signaturePadInitialized = false;
     let modalImages = [];
     let modalImageIndex = 0;
+    let productLoadInProgress = false;
 
     window.onload = loadData;
+    window.addEventListener('pageshow', recoverVisiblePage);
+    document.addEventListener('visibilitychange', () => {
+        if(document.visibilityState === 'visible') recoverVisiblePage();
+    });
+
+    function recoverVisiblePage() {
+        const visiblePage = ['orderPage', 'confirmPage', 'agreementPage', 'resultPage']
+            .some(id => document.getElementById(id).classList.contains('active'));
+        if(!visiblePage) document.getElementById('orderPage').classList.add('active');
+        if(products.length === 0 && document.getElementById('loader').style.display !== 'flex') loadData();
+    }
 
     function loadData(retryCount = 0) {
+        if(productLoadInProgress) return;
+        productLoadInProgress = true;
         document.getElementById('loader').style.display = 'flex';
         fetch(API_URL + "?action=getProducts&t=" + new Date().getTime())
             .then(res => res.json())
@@ -376,9 +390,11 @@
                 if(!Array.isArray(data) || data.length === 0) throw new Error('제품 데이터 없음');
                 products = data;
                 renderGrids();
+                productLoadInProgress = false;
                 document.getElementById('loader').style.display = 'none';
             })
             .catch(() => {
+                productLoadInProgress = false;
                 if(retryCount < 1) return loadData(retryCount + 1);
                 document.getElementById('loader').style.display = 'none';
                 alert("제품 정보를 불러오지 못했습니다. 잠시 후 페이지를 새로고침해 주세요.");
@@ -430,7 +446,7 @@
                     targetGrid.innerHTML += `
                 <div class="product-card">
                     <div class="img-container" data-images="${imageData}" data-image-index="0" style="position:relative" onclick="openModalFromCard(this)">
-                        <img src="${images[0] || ''}" onerror="this.src='https://via.placeholder.com/150'">
+                        <img src="${images[0] || ''}" loading="lazy" decoding="async" onerror="this.src='https://via.placeholder.com/150'">
                         ${images.length > 1 ? `<button type="button" class="image-nav-btn image-nav-prev" onclick="event.stopPropagation(); changeProductImage(this, -1)">‹</button><button type="button" class="image-nav-btn image-nav-next" onclick="event.stopPropagation(); changeProductImage(this, 1)">›</button><span class="image-count">1 / ${images.length}</span>` : ''}
                     </div>
                     <div class="product-name">${displayName}</div>
