@@ -59,6 +59,10 @@
         .product-card { border: 1px solid #eee; border-radius: 10px; padding: 12px; text-align: center; background: #fff; display: flex; flex-direction: column; justify-content: space-between; }
         .img-container { width: 100%; aspect-ratio: 1/1; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #fff; margin-bottom: 10px; border-radius: 6px; cursor: pointer; }
         .img-container img { width: 100%; height: 100%; object-fit: contain; }
+        .image-nav-btn { position: absolute; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; padding: 0; border: 0; border-radius: 50%; background: rgba(0,0,0,0.62); color: #fff; font-size: 20px; line-height: 32px; z-index: 2; cursor: pointer; }
+        .image-nav-prev { left: 7px; }
+        .image-nav-next { right: 7px; }
+        .image-count { position: absolute; right: 7px; bottom: 7px; padding: 3px 7px; border-radius: 10px; background: rgba(0,0,0,0.62); color: #fff; font-size: 10px; z-index: 2; }
         .product-name { font-size: 12px; font-weight: 600; margin-bottom: 4px; min-height: 30px; display: flex; align-items: center; justify-content: center; line-height: 1.2; }
         .product-price { margin-bottom: 10px; }
         .purchase-price { color: #000; font-size: 16px; font-weight: 800; line-height: 1.4; }
@@ -94,7 +98,11 @@
         
         /* 모달 및 로더 */
         #imageModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; justify-content: center; align-items: center; }
-        #imageModal img { max-width: 95%; max-height: 80%; }
+        #imageModal img { max-width: 88%; max-height: 80%; }
+        .modal-image-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 46px; height: 46px; border: 0; border-radius: 50%; background: rgba(255,255,255,0.18); color: #fff; font-size: 28px; cursor: pointer; }
+        .modal-image-prev { left: 18px; }
+        .modal-image-next { right: 18px; }
+        .modal-image-count { position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%); color: #fff; font-size: 13px; }
         #loader { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); color: white; flex-direction: column; justify-content: center; align-items: center; z-index: 3000; }
         .summary-box { background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px dashed #000; white-space: pre-wrap; font-size: 14px; text-align: left; }
         .step-title { text-align: center; margin: 10px 0 6px; font-size: 22px; }
@@ -141,7 +149,12 @@
 </head>
 <body>
 
-<div id="imageModal" onclick="this.style.display='none'"><img id="modalImg" src=""></div>
+<div id="imageModal" onclick="this.style.display='none'">
+    <button type="button" id="modalPrevBtn" class="modal-image-nav modal-image-prev" onclick="event.stopPropagation(); changeModalImage(-1)">‹</button>
+    <img id="modalImg" src="" onclick="event.stopPropagation()">
+    <button type="button" id="modalNextBtn" class="modal-image-nav modal-image-next" onclick="event.stopPropagation(); changeModalImage(1)">›</button>
+    <div id="modalImageCount" class="modal-image-count"></div>
+</div>
 <div id="loader"><div id="loaderText">데이터 로딩 중...</div></div>
 
 <header><h1>유한회사 뮤지크크리에이티브레이블 제품 주문</h1></header>
@@ -340,7 +353,7 @@
 </div>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbxSaPqUUlM6Hy-tpLEzoMvTIZm7Hmcoy982DEi942y8VrtvhxBuJtIyyB5UigxCnoPsLQ/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbx0W6pgpl8j85dfY1jz7jyR6hQqljOXaGKoPLFG7Sqr5v6BLe2QACW6zfshCH4dLQPGUw/exec";
     const SINGLE_BRAND_MIN_ORDER_AMOUNT = 4000000;
     const CROSS_BRAND_MIN_ORDER_AMOUNT = 5000000;
     let products = [];
@@ -350,6 +363,8 @@
     let signatureDrawing = false;
     let hasSignature = false;
     let signaturePadInitialized = false;
+    let modalImages = [];
+    let modalImageIndex = 0;
 
     window.onload = loadData;
 
@@ -410,10 +425,13 @@
 
             productGroups.forEach(productItems => {
                 productItems.forEach(({ product: p, displayName }) => {
+                    const images = Array.isArray(p.images) && p.images.length ? p.images : [p.img].filter(Boolean);
+                    const imageData = encodeURIComponent(JSON.stringify(images));
                     targetGrid.innerHTML += `
                 <div class="product-card">
-                    <div class="img-container" onclick="openModal('${p.img}')">
-                        <img src="${p.img}" onerror="this.src='https://via.placeholder.com/150'">
+                    <div class="img-container" data-images="${imageData}" data-image-index="0" style="position:relative" onclick="openModalFromCard(this)">
+                        <img src="${images[0] || ''}" onerror="this.src='https://via.placeholder.com/150'">
+                        ${images.length > 1 ? `<button type="button" class="image-nav-btn image-nav-prev" onclick="event.stopPropagation(); changeProductImage(this, -1)">‹</button><button type="button" class="image-nav-btn image-nav-next" onclick="event.stopPropagation(); changeProductImage(this, 1)">›</button><span class="image-count">1 / ${images.length}</span>` : ''}
                     </div>
                     <div class="product-name">${displayName}</div>
                     <div class="product-price">
@@ -512,10 +530,43 @@
         input.value = value > 0 ? value.toLocaleString() : '';
     }
 
-    function openModal(src) {
+    function getCardImages(container) {
+        try { return JSON.parse(decodeURIComponent(container.dataset.images || '')) || []; }
+        catch (error) { return []; }
+    }
+
+    function changeProductImage(button, direction) {
+        const container = button.closest('.img-container');
+        const images = getCardImages(container);
+        if(images.length < 2) return;
+        let index = parseInt(container.dataset.imageIndex || '0', 10);
+        index = (index + direction + images.length) % images.length;
+        container.dataset.imageIndex = index;
+        container.querySelector('img').src = images[index];
+        container.querySelector('.image-count').innerText = `${index + 1} / ${images.length}`;
+    }
+
+    function openModalFromCard(container) {
+        modalImages = getCardImages(container);
+        modalImageIndex = parseInt(container.dataset.imageIndex || '0', 10);
+        if(!modalImages.length) return;
         const modal = document.getElementById('imageModal');
-        document.getElementById('modalImg').src = src;
+        showModalImage();
         modal.style.display = 'flex';
+    }
+
+    function changeModalImage(direction) {
+        if(modalImages.length < 2) return;
+        modalImageIndex = (modalImageIndex + direction + modalImages.length) % modalImages.length;
+        showModalImage();
+    }
+
+    function showModalImage() {
+        document.getElementById('modalImg').src = modalImages[modalImageIndex];
+        document.getElementById('modalImageCount').innerText = `${modalImageIndex + 1} / ${modalImages.length}`;
+        const hasMultiple = modalImages.length > 1;
+        document.getElementById('modalPrevBtn').style.display = hasMultiple ? 'block' : 'none';
+        document.getElementById('modalNextBtn').style.display = hasMultiple ? 'block' : 'none';
     }
 
     function setActivePage(pageId) {
