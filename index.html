@@ -340,7 +340,7 @@
 </div>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbxE-Av_Oqk-vx4D3JIQzkgqm4qziTtOvhT-37GCCmVxxfsesK3i-tXec9Pen5zVYUeo0A/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbxSaPqUUlM6Hy-tpLEzoMvTIZm7Hmcoy982DEi942y8VrtvhxBuJtIyyB5UigxCnoPsLQ/exec";
     const SINGLE_BRAND_MIN_ORDER_AMOUNT = 4000000;
     const CROSS_BRAND_MIN_ORDER_AMOUNT = 5000000;
     let products = [];
@@ -353,16 +353,21 @@
 
     window.onload = loadData;
 
-    function loadData() {
+    function loadData(retryCount = 0) {
         document.getElementById('loader').style.display = 'flex';
         fetch(API_URL + "?action=getProducts&t=" + new Date().getTime())
             .then(res => res.json())
             .then(data => {
+                if(!Array.isArray(data) || data.length === 0) throw new Error('제품 데이터 없음');
                 products = data;
                 renderGrids();
                 document.getElementById('loader').style.display = 'none';
             })
-            .catch(() => alert("데이터 로드 실패"));
+            .catch(() => {
+                if(retryCount < 1) return loadData(retryCount + 1);
+                document.getElementById('loader').style.display = 'none';
+                alert("제품 정보를 불러오지 못했습니다. 잠시 후 페이지를 새로고침해 주세요.");
+            });
     }
 
     function renderGrids() {
