@@ -336,14 +336,11 @@
     <div class="total-label">전체 브랜드 합산 금액</div>
     <div class="total-amount" id="displayTotal">0원</div>
     <div class="bonus-credit" id="displayBonusCredit"></div>
-    <button type="button" id="stickyOrderBtn" class="sticky-order-btn" onclick="reviewOrder()" disabled>최소 주문금액 5,000,000원</button>
     <button type="button" id="stickyOrderBtn" class="sticky-order-btn" onclick="reviewOrder()" disabled>최소 주문금액 4,000,000원</button>
 </div>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbyXvYfEMk0nJlDxXaFdOqh2IBkquue25v87FRgeQt-HhvSd5AsPxFBbWyON5beTgQU7ig/exec";
-    const MIN_ORDER_AMOUNT = 5000000;
-    const API_URL = "https://script.google.com/macros/s/AKfycbzW0Dxhi-FmaccUtrf2cGsopNDJrAPMug4wOl4DWzST7ZcoUUs_9-uEIUEzTdhapaZ_EA/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbxE-Av_Oqk-vx4D3JIQzkgqm4qziTtOvhT-37GCCmVxxfsesK3i-tXec9Pen5zVYUeo0A/exec";
     const SINGLE_BRAND_MIN_ORDER_AMOUNT = 4000000;
     const CROSS_BRAND_MIN_ORDER_AMOUNT = 5000000;
     let products = [];
@@ -397,7 +394,6 @@
                 targetGrid.innerHTML += `<div class="collection-description">${descriptionItem.product.collectionDescription}</div>`;
             }
             if(collection.trim() === '잇섭') {
-                targetGrid.innerHTML += `<div class="collection-order-rule">주문 조건: 잇섭 제품을 하나라도 주문할 경우, 잇섭의 모든 모델·컬러를 각각 최소 5개 이상 주문해야 합니다.</div>`;
                 targetGrid.innerHTML += `<div class="collection-order-rule">주문 조건: 잇섭 제품을 하나라도 주문할 경우, 잇섭의 모든 모델·컬러를 각각 최소 3개 이상 주문해야 합니다.</div>`;
             }
             const productGroups = new Map();
@@ -483,16 +479,11 @@
             return collection.trim() === '잇섭';
         });
         const hasItsubOrder = itsubProducts.some(p => (orderQty[p.name] || 0) > 0);
-        const hasItsubMinimumError = hasItsubOrder && itsubProducts.some(p => (orderQty[p.name] || 0) < 5);
-        const canOrder = total >= MIN_ORDER_AMOUNT && !hasItsubMinimumError;
         const hasItsubMinimumError = hasItsubOrder && itsubProducts.some(p => (orderQty[p.name] || 0) < 3);
         const canOrder = total >= requiredMinimum && !hasItsubMinimumError;
         orderButton.disabled = !canOrder;
         orderButton.innerText = canOrder
             ? '주문정보 확인하기'
-            : (hasItsubMinimumError && total >= MIN_ORDER_AMOUNT
-                ? '잇섭 전체 모델·컬러를 각각 최소 5개'
-                : '최소 주문금액 5,000,000원');
             : (hasItsubMinimumError && total >= requiredMinimum
                 ? '잇섭 전체 모델·컬러를 각각 최소 3개'
                 : `최소 주문금액 ${requiredMinimum.toLocaleString()}원`);
@@ -568,20 +559,15 @@
             return collection.trim() === '잇섭';
         });
         const hasItsubOrder = itsubProducts.some(p => (orderQty[p.name] || 0) > 0);
-        const invalidItsubItems = hasItsubOrder ? itsubProducts.filter(p => (orderQty[p.name] || 0) < 5) : [];
         const invalidItsubItems = hasItsubOrder ? itsubProducts.filter(p => (orderQty[p.name] || 0) < 3) : [];
         if(invalidItsubItems.length > 0) {
-            return alert("잇섭 제품을 주문하려면 모든 모델·컬러를 각각 최소 5개 이상 선택해야 합니다.\n\n[5개 미만인 제품]\n" + invalidItsubItems.map(p => p.name).join("\n"));
             return alert("잇섭 제품을 주문하려면 모든 모델·컬러를 각각 최소 3개 이상 선택해야 합니다.\n\n[3개 미만인 제품]\n" + invalidItsubItems.map(p => p.name).join("\n"));
         }
-        if(total < MIN_ORDER_AMOUNT) {
-            const shortage = MIN_ORDER_AMOUNT - total;
         const requiredMinimum = getRequiredMinimumOrderAmount();
         if(total < requiredMinimum) {
             const shortage = requiredMinimum - total;
             const minimumRule = requiredMinimum === CROSS_BRAND_MIN_ORDER_AMOUNT ? '두 브랜드 교차 주문' : '단일 브랜드 주문';
             return alert(
-                `최소 주문금액은 STEALER와 muzik 합산 ${MIN_ORDER_AMOUNT.toLocaleString()}원입니다.\n` +
                 `${minimumRule} 최소 주문금액은 ${requiredMinimum.toLocaleString()}원입니다.\n` +
                 `현재 주문금액: ${total.toLocaleString()}원\n` +
                 `부족한 금액: ${shortage.toLocaleString()}원`
