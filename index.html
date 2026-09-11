@@ -98,6 +98,14 @@
         .agreement-check { display: flex; align-items: flex-start; gap: 10px; margin: 18px 0 8px; padding: 15px; background: #f5f5f5; border-radius: 8px; text-align: left; }
         .agreement-check input { width: 20px; height: 20px; margin: 0; flex: 0 0 auto; }
         .agreement-check label { margin: 0; line-height: 1.5; cursor: pointer; }
+        .signature-party-row { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 12px; margin-top: 18px; text-align: left; }
+        .signature-field { display: flex; flex-direction: column; min-width: 0; }
+        .signature-field-title { margin-bottom: 7px; font-size: 13px; font-weight: 800; }
+        .signature-branch { display: flex; align-items: center; min-height: 118px; padding: 14px; border: 1px solid #ddd; border-radius: 8px; background: #fafafa; box-sizing: border-box; font-size: 15px; font-weight: 700; word-break: break-word; }
+        .signature-pad-wrap { position: relative; overflow: hidden; height: 118px; border: 1px solid #bbb; border-radius: 8px; background: #fff; }
+        #signatureCanvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+        .signature-guide { position: absolute; left: 0; right: 0; bottom: 12px; color: #ccc; text-align: center; font-size: 11px; pointer-events: none; }
+        .signature-clear { align-self: flex-end; margin-top: 7px; padding: 7px 11px; border: 1px solid #ccc; border-radius: 6px; background: #fff; color: #555; font-size: 12px; cursor: pointer; }
         .complete-wrap { padding: 18px 0 30px; }
         .success-icon { width: 68px; height: 68px; margin: 0 auto 16px; border-radius: 50%; background: #000; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 800; }
         .complete-title { margin: 0; text-align: center; font-size: 25px; color: #111; }
@@ -245,6 +253,21 @@
 ② 본 계약의 내용을 변경하고자 할 경우, 양 당사자의 서면 합의에 의한다.
 
 을이 오더페이지에서 본 계약의 내용을 확인한 후 동의란을 체크하고 주문을 제출한 경우, 별도의 서명 또는 기명날인 없이 본 계약의 모든 내용에 동의한 것으로 간주한다.</div>
+을이 오더페이지에서 전자서명을 하고 본 계약의 내용을 확인한 후 동의란을 체크하여 주문을 제출한 경우, 별도의 기명날인 없이 본 계약의 모든 내용에 동의한 것으로 간주한다.</div>
+        <div class="signature-party-row">
+            <div class="signature-field">
+                <div class="signature-field-title">지점명</div>
+                <div class="signature-branch" id="signatureBranch"></div>
+            </div>
+            <div class="signature-field">
+                <div class="signature-field-title">서명</div>
+                <div class="signature-pad-wrap">
+                    <canvas id="signatureCanvas"></canvas>
+                    <div class="signature-guide">이곳에 서명해 주세요</div>
+                </div>
+                <button type="button" class="signature-clear" onclick="clearSignature()">서명 지우기</button>
+            </div>
+        </div>
         <div class="agreement-check">
             <input type="checkbox" id="contractAgree">
             <label for="contractAgree">위 주문정보와 판매 파트너십 계약 내용을 모두 확인했으며 이에 동의합니다.</label>
@@ -294,10 +317,15 @@
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwgeSPFaLY-u7H7gI3g25qjvxLMgvEImdVsjlm5RKPANUTrApabzFHZDFlGaU3aoK-o2Q/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbyjtgLxu89wFkPXUg9bnGxHPUBflrG0N8TiVQcVb9iiS0R8MzBQEei4HF7Y-SrZLCwhAg/exec";
     const MIN_ORDER_AMOUNT = 5000000;
     let products = [];
     let orderQty = {}; 
     let pendingOrder = null;
+    let signatureContext = null;
+    let signatureDrawing = false;
+    let hasSignature = false;
+    let signaturePadInitialized = false;
 
     window.onload = loadData;
 
@@ -506,14 +534,72 @@
     function showAgreementPage() {
         if(!pendingOrder) return showOrderPage();
         document.getElementById('contractPartner').innerText = pendingOrder.branch + ' 파트너샵';
+        document.getElementById('signatureBranch').innerText = pendingOrder.branch;
         document.getElementById('contractAgree').checked = false;
         setActivePage('agreementPage');
+        requestAnimationFrame(setupSignaturePad);
+    }
+
+    function setupSignaturePad() {
+        const canvas = document.getElementById('signatureCanvas');
+        const rect = canvas.getBoundingClientRect();
+        const ratio = window.devicePixelRatio || 1;
+        canvas.width = Math.max(1, Math.round(rect.width * ratio));
+        canvas.height = Math.max(1, Math.round(rect.height * ratio));
+        signatureContext = canvas.getContext('2d');
+        signatureContext.setTransform(ratio, 0, 0, ratio, 0, 0);
+        signatureContext.lineWidth = 2.2;
+        signatureContext.lineCap = 'round';
+        signatureContext.lineJoin = 'round';
+        signatureContext.strokeStyle = '#111';
+        hasSignature = false;
+
+        if(signaturePadInitialized) return;
+        signaturePadInitialized = true;
+
+        const getPoint = event => {
+            const bounds = canvas.getBoundingClientRect();
+            return { x: event.clientX - bounds.left, y: event.clientY - bounds.top };
+        };
+        canvas.addEventListener('pointerdown', event => {
+            event.preventDefault();
+            signatureDrawing = true;
+            hasSignature = true;
+            canvas.setPointerCapture(event.pointerId);
+            const point = getPoint(event);
+            signatureContext.beginPath();
+            signatureContext.moveTo(point.x, point.y);
+        });
+        canvas.addEventListener('pointermove', event => {
+            if(!signatureDrawing) return;
+            event.preventDefault();
+            const point = getPoint(event);
+            signatureContext.lineTo(point.x, point.y);
+            signatureContext.stroke();
+        });
+        const finishSignature = event => {
+            if(!signatureDrawing) return;
+            event.preventDefault();
+            signatureDrawing = false;
+            signatureContext.closePath();
+        };
+        canvas.addEventListener('pointerup', finishSignature);
+        canvas.addEventListener('pointercancel', finishSignature);
+    }
+
+    function clearSignature() {
+        const canvas = document.getElementById('signatureCanvas');
+        if(signatureContext) signatureContext.clearRect(0, 0, canvas.width, canvas.height);
+        hasSignature = false;
     }
 
     function submitOrder() {
         if(!pendingOrder) return showOrderPage();
         if(!document.getElementById('contractAgree').checked) {
             return alert('판매 파트너십 계약 내용에 동의해 주세요.');
+        }
+        if(!hasSignature) {
+            return alert('지점명 옆 서명란에 서명해 주세요.');
         }
 
         const { branch, address, mobile, email, splitItems, total, summary } = pendingOrder;
@@ -530,6 +616,7 @@
         fd.append("contractAgreed", "동의");
         fd.append("contractAgreedAt", new Date().toISOString());
         fd.append("contractVersion", "2026-09-07");
+        fd.append("signatureData", document.getElementById('signatureCanvas').toDataURL('image/png'));
 
         fetch(API_URL, { method: "POST", mode: "no-cors", body: fd }).then(() => {
             document.getElementById('loader').style.display = 'none';
