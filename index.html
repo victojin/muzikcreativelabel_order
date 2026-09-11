@@ -40,6 +40,8 @@
         .credit-input-wrap { position: relative; }
         .credit-input { width: 100%; padding: 14px 38px 14px 14px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; background: #fff; font-size: 16px; font-weight: 700; text-align: right; }
         .credit-unit { position: absolute; top: 50%; right: 14px; transform: translateY(-50%); font-size: 14px; font-weight: 700; pointer-events: none; }
+        .credit-input { width: 100%; padding: 14px 58px 14px 14px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; background: #fff; font-size: 16px; font-weight: 700; text-align: right; }
+        .credit-unit { position: absolute; top: 50%; right: 18px; transform: translateY(-50%); padding-left: 10px; background: #fff; font-size: 14px; font-weight: 700; pointer-events: none; }
 
         /* 제품 그리드 및 하단 버튼 가림 방지 여백 */
         .product-grid { display: none; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; }
@@ -268,6 +270,7 @@
 ② 본 계약의 내용을 변경하고자 할 경우, 양 당사자의 서면 합의에 의한다.
 
 을이 오더페이지에서 전자서명을 하고 본 계약의 내용을 확인한 후 동의란을 체크하여 주문을 제출한 경우, 별도의 기명날인 없이 본 계약의 모든 내용에 동의한 것으로 간주한다.</div>
+을이 오더페이지에서 전자서명을 완료하고 본 계약의 내용을 확인한 후 동의란을 체크하여 주문을 제출한 경우, 해당 전자서명을 통해 본 계약을 체결하고 본 계약의 모든 내용에 동의한 것으로 간주한다.</div>
         <div class="signature-party-row">
             <div class="signature-field">
                 <div class="signature-field-title">지점명</div>
@@ -333,6 +336,7 @@
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwC2gY1-EDytY2wBF-rR7JzNt6CArU7dLsH18YYaggMzD_-bKxHGvQhL2U0Ez68H-8Z3g/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbyXvYfEMk0nJlDxXaFdOqh2IBkquue25v87FRgeQt-HhvSd5AsPxFBbWyON5beTgQU7ig/exec";
     const MIN_ORDER_AMOUNT = 5000000;
     let products = [];
     let orderQty = {}; 
