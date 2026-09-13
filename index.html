@@ -356,6 +356,8 @@
     const SINGLE_BRAND_MIN_ORDER_AMOUNT = 4000000;
     const CROSS_BRAND_MIN_ORDER_AMOUNT = 5000000;
     const PRODUCT_CACHE_KEY = 'muzikOrderProductsV3';
+    const PRODUCT_REQUEST_TIMEOUT = 45000;
+    const PRODUCT_RETRY_DELAYS = [2000, 5000, 10000];
     let products = [];
     let orderQty = {}; 
     let pendingOrder = null;
@@ -381,9 +383,9 @@
         if(products.length === 0 && document.getElementById('loader').style.display !== 'flex') loadData();
     }
 
-    function loadData(retryCount = 0) {
+    function loadData() {
         if(productLoadInProgress) return;
-        if(retryCount === 0 && products.length === 0) {
+        if(products.length === 0) {
             try {
                 const cachedProducts = JSON.parse(localStorage.getItem(PRODUCT_CACHE_KEY) || 'null');
                 if(Array.isArray(cachedProducts) && cachedProducts.length > 0) {
@@ -396,8 +398,21 @@
         }
         productLoadInProgress = true;
         document.getElementById('loader').style.display = products.length > 0 ? 'none' : 'flex';
-        fetch(API_URL + "?action=getProducts&t=" + new Date().getTime())
-            .then(res => res.json())
+        document.getElementById('loaderText').textContent = '제품 정보를 불러오는 중입니다...';
+        requestProductData(0);
+    }
+
+    function requestProductData(attempt) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), PRODUCT_REQUEST_TIMEOUT);
+        fetch(API_URL + "?action=getProducts&t=" + new Date().getTime(), {
+            signal: controller.signal,
+            cache: 'no-store'
+        })
+            .then(res => {
+                if(!res.ok) throw new Error('제품 서버 응답 오류');
+                return res.json();
+            })
             .then(data => {
                 if(!Array.isArray(data) || data.length === 0) throw new Error('제품 데이터 없음');
                 products = data;
@@ -405,13 +420,20 @@
                 renderGrids();
                 productLoadInProgress = false;
                 document.getElementById('loader').style.display = 'none';
+                document.getElementById('loaderText').textContent = '데이터 로딩 중...';
             })
             .catch(() => {
+                if(attempt < PRODUCT_RETRY_DELAYS.length) {
+                    if(products.length === 0) {
+                        document.getElementById('loaderText').textContent = '연결이 지연되어 다시 시도하고 있습니다...';
+                    }
+                    return setTimeout(() => requestProductData(attempt + 1), PRODUCT_RETRY_DELAYS[attempt]);
+                }
                 productLoadInProgress = false;
-                if(retryCount < 1) return loadData(retryCount + 1);
                 document.getElementById('loader').style.display = 'none';
                 if(products.length === 0) alert("제품 정보를 불러오지 못했습니다. 잠시 후 페이지를 새로고침해 주세요.");
-            });
+            })
+            .finally(() => clearTimeout(timeoutId));
     }
 
     function renderGrids() {
