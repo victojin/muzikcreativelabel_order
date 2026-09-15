@@ -551,27 +551,11 @@
         bonusDisplay.style.display = bonusCredit > 0 ? 'block' : 'none';
         bonusDisplay.innerText = bonusCredit > 0 ? `10% 추가 적립금 ${bonusCredit.toLocaleString()}원 제공` : '';
         const orderButton = document.getElementById('stickyOrderBtn');
-        const itsubProducts = products.filter(p => {
-            const collection = p.collection || ((p.name.match(/^\s*\[([^\]]+)\]/) || [])[1] || '');
-            return collection.trim() === '잇섭';
-        });
-        const hasItsubOrder = itsubProducts.some(p => (orderQty[p.name] || 0) > 0);
-        const hasItsubMinimumError = hasItsubOrder && itsubProducts.some(p => (orderQty[p.name] || 0) < 3);
-        const hapeProducts = products.filter(p => {
-            const collection = p.collection || ((p.name.match(/^\s*\[([^\]]+)\]/) || [])[1] || '');
-            return collection.trim() === '헤이프';
-        });
-        const hasHapeOrder = hapeProducts.some(p => (orderQty[p.name] || 0) > 0);
-        const hasHapeMinimumError = hasHapeOrder && hapeProducts.some(p => (orderQty[p.name] || 0) < 2);
-        const canOrder = total >= requiredMinimum && !hasItsubMinimumError && !hasHapeMinimumError;
+        const canOrder = total >= requiredMinimum;
         orderButton.disabled = !canOrder;
         orderButton.innerText = canOrder
             ? '주문정보 확인하기'
-            : (hasItsubMinimumError && total >= requiredMinimum
-                ? '잇섭 전체 모델·컬러를 각각 최소 3개'
-                : (hasHapeMinimumError && total >= requiredMinimum
-                    ? '헤이프 전체 모델·컬러를 각각 최소 2개'
-                    : `최소 주문금액 ${requiredMinimum.toLocaleString()}원`));
+            : `최소 주문금액 ${requiredMinimum.toLocaleString()}원`;
     }
 
     function getRequiredMinimumOrderAmount() {
@@ -692,24 +676,6 @@
         if(creditAmount > 0) {
             details.push(`적립금 구매 : ${creditAmount.toLocaleString()}원`);
             orderedItems.push({ brand: 'CREDIT', name: `적립금 구매 ${creditAmount.toLocaleString()}원`, quantity: 1 });
-        }
-        const itsubProducts = products.filter(p => {
-            const collection = p.collection || ((p.name.match(/^\s*\[([^\]]+)\]/) || [])[1] || '');
-            return collection.trim() === '잇섭';
-        });
-        const hasItsubOrder = itsubProducts.some(p => (orderQty[p.name] || 0) > 0);
-        const invalidItsubItems = hasItsubOrder ? itsubProducts.filter(p => (orderQty[p.name] || 0) < 3) : [];
-        if(invalidItsubItems.length > 0) {
-            return alert("잇섭 제품을 주문하려면 모든 모델·컬러를 각각 최소 3개 이상 선택해야 합니다.\n\n[3개 미만인 제품]\n" + invalidItsubItems.map(p => p.name).join("\n"));
-        }
-        const hapeProducts = products.filter(p => {
-            const collection = p.collection || ((p.name.match(/^\s*\[([^\]]+)\]/) || [])[1] || '');
-            return collection.trim() === '헤이프';
-        });
-        const hasHapeOrder = hapeProducts.some(p => (orderQty[p.name] || 0) > 0);
-        const invalidHapeItems = hasHapeOrder ? hapeProducts.filter(p => (orderQty[p.name] || 0) < 2) : [];
-        if(invalidHapeItems.length > 0) {
-            return alert("헤이프 제품을 주문하려면 모든 모델·컬러를 각각 최소 2개 이상 선택해야 합니다.\n\n[2개 미만인 제품]\n" + invalidHapeItems.map(p => p.name).join("\n"));
         }
         const requiredMinimum = getRequiredMinimumOrderAmount();
         if(total < requiredMinimum) {
